@@ -51,7 +51,7 @@ export const useApiCall = <T, E>({
         if (status === 500) {
           handleError(status, statusText);
         } else {
-          handleError(status, data.error.message);
+          handleError(status, data?.error?.message || "Error");
         }
       }
       if (status === 401) {

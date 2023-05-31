@@ -1,4 +1,3 @@
-import * as React from "react";
 import Checkbox from "@mui/material/Checkbox";
 import { useRouter } from "next/router";
 import {
@@ -13,79 +12,53 @@ import {
   TableRow,
 } from "@mui/material";
 import { Stack } from "@mui/system";
-import dayjs from "dayjs";
 import DropDown from "@/components/dropdown2/DropDown";
+import { SubjectResponseType } from "@/types/subject/SubjectResponse";
+import { SuccessResponse } from "@/types/response/SuccessResponse";
+import { ErrorResponse } from "@/types/response/ErrorResponse";
+import { getMethod2, postMethod2 } from "@/services";
+import { apiRoutes } from "@/constant/apiRoutes";
+import { useApiCall } from "@/hooks";
+import { useCookies } from "react-cookie";
+import { ACCESS_TOKEN, REFRESH_TOKEN } from "@/constant/auth";
+import { toast } from "react-toastify";
+import { ClassroomResponseType } from "@/types/classroom/ClassroomResponse";
+import { useEffect, useState, ChangeEvent } from "react";
+import { ClassroomRegisterRequest } from "@/types/classroom/ClassroomRegisterRequest";
+
 const label = { inputProps: { "aria-label": "Checkbox demo" } };
 
-const mockData = [
-  {
-    id: "09387cf5-1f41-4088-9ccc-1d403a6294ee",
-    subjectId: "76577750-0ab3-4e8b-9321-fba7f5587779",
-    name: "Toán Cao Cấp A1 - L01",
-    description: "Lớp L01",
-    isDeleted: false,
-    createdDate: "2023-03-29T22:30:13.772Z",
-    updatedDate: "2023-03-29T22:30:13.772Z",
-    subject: {
-      id: "76577750-0ab3-4e8b-9321-fba7f5587779",
-      name: "Toán Cao Cấp A1",
-      description: "Toán Cao Cấp A1: Cho những người thích toán",
-      isDeleted: false,
-      createdDate: "2023-03-20T16:26:18.251Z",
-      updatedDate: "2023-03-20T16:26:18.251Z",
-    },
-  },
-  //   {
-  //     id: "e992a571-084b-4a0f-b5f7-6e8fe381aa91",
-  //     subjectId: "aec381b2-d8dc-464c-b1f8-cae28de4d492",
-  //     name: "Tiếng Anh 1 - L06",
-  //     description: "Lớp L06 cho môn Tiếng Anh 1",
-  //     isDeleted: false,
-  //     createdDate: "2023-03-29T22:35:01.563Z",
-  //     updatedDate: "2023-03-29T22:35:01.563Z",
-  //     subject: {
-  //       id: "aec381b2-d8dc-464c-b1f8-cae28de4d492",
-  //       name: "Tiếng Anh 1",
-  //       description: "toan cao cap 1",
-  //       isDeleted: false,
-  //       createdDate: "2023-03-21T13:23:22.456Z",
-  //       updatedDate: "2023-03-21T13:23:48.358Z",
-  //     },
-  //   },
-];
-
-const subject = [
-  {
-    id: "1",
-    name: "Toán Cao Cấp A1",
-    description: "Toán Cao Cấp A1: Cho những người thích toán",
-  },
-  {
-    id: "2",
-    name: "Tiếng Anh Căn bản",
-    description: "Toán Cao Cấp A1: Cho những người thích toán",
-  },
-  {
-    id: "3",
-    name: "Lập trình hướng đối tượng",
-    description: "Toán Cao Cấp A1: Cho những người thích toán",
-  },
-];
 export const StudentRegister = () => {
   const router = useRouter();
-  const [params, setParams] = React.useState({
+  const [params, setParams] = useState({
     page: 1,
     pageSize: 6,
   });
-  const [countPage, setCountPage] = React.useState(1);
-  const [checkedId, setCheckedId] = React.useState<string>("");
-  const handleOnChange = (e: string) => {
-    setCheckedId(e);
-  };
-  const [request, setRequest] = React.useState({
+  const [subjects, setSubjects] = useState<SubjectResponseType[]>([]);
+  const [classrooms, setClassrooms] = useState<
+    ClassroomResponseType[] | undefined
+  >([]);
+
+  const [cookie, setCookie] = useCookies([ACCESS_TOKEN, REFRESH_TOKEN]);
+  const [countPage, setCountPage] = useState(1);
+  const [checkedId, setCheckedId] = useState<string>("");
+
+  const [request, setRequest] = useState({
     subjectId: "",
   });
-  const handleChange = (event: React.ChangeEvent<unknown>, value: number) => {
+  const [registerRequest, setRegisterRequest] =
+    useState<ClassroomRegisterRequest>({ classroomIds: [] });
+
+  const handleRegister = () => {
+    registerClassroom.setLetCall(true);
+  };
+  const handleOnChange = (e: string) => {
+    setCheckedId(e);
+    setRegisterRequest({
+      classroomIds: [e],
+    });
+  };
+  const handleChange = (event: ChangeEvent<unknown>, value: number) => {
     setParams({ ...params, page: value });
   };
   const handleChangeDropDown = (key: any, value: any) => {
@@ -93,7 +66,53 @@ export const StudentRegister = () => {
       ...request,
       [key]: value,
     });
+
+    const classrooms = subjects.find(
+      (subject) => subject.id === value
+    )?.classrooms;
+    setClassrooms(classrooms);
+    setCheckedId("");
   };
+
+  const getSubjects = useApiCall<
+    SuccessResponse<SubjectResponseType[]>,
+    ErrorResponse
+  >({
+    callApi: () =>
+      getMethod2({
+        pathName: `${apiRoutes.subject}`,
+        token: cookie.token,
+      }),
+    handleSuccess(message, data) {
+      setSubjects(data.result.filter((e) => !e.isDeleted));
+    },
+    handleError(status, message) {
+      toast.error("NOT FOUND!");
+      router.push("/404");
+    },
+  });
+
+  const registerClassroom = useApiCall<SuccessResponse<any>, ErrorResponse>({
+    callApi: () =>
+      postMethod2({
+        pathName: `${apiRoutes.classroomRegister}`,
+        token: cookie.token,
+        request: registerRequest,
+      }),
+    handleSuccess(message, data) {
+      toast.success("SUCCESS");
+    },
+    handleError(status, message) {
+      toast.error("REGISTER FAIL");
+    },
+  });
+
+  useEffect(() => {
+    if (router.isReady) {
+      getSubjects.setLetCall(true);
+    }
+  }, []);
+
   return (
     <div
       style={{
@@ -110,7 +129,7 @@ export const StudentRegister = () => {
           }}
         >
           <Button
-            // onClick={handleCreate}
+            onClick={handleRegister}
             variant="contained"
             style={{
               margin: "1rem 0",
@@ -128,7 +147,7 @@ export const StudentRegister = () => {
             <DropDown
               id="subjectId"
               label="Filter subject"
-              list={subject}
+              list={subjects}
               value={request.subjectId}
               setValue={handleChangeDropDown}
             />
@@ -149,8 +168,8 @@ export const StudentRegister = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {mockData
-                .filter((e) => !e.isDeleted)
+              {classrooms
+                ?.filter((e) => !e.isDeleted)
                 .map((row) => (
                   <TableRow
                     id={row.id}

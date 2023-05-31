@@ -11,8 +11,10 @@ export const apiRoutes = {
   address: "/address",
   subject: "/subject",
   classroom: "/classroom",
+  classroomRegister: "/classroom/register",
   periodTimeRange: "/class-period-time-range",
   classPeriod: "/class-period",
+  payment: "/payment",
 };
 
 export const innerRoutes = {

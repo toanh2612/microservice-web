@@ -1,7 +1,7 @@
 import axios, { AxiosRequestConfig, InternalAxiosRequestConfig } from "axios";
 
-const axiosInstance2 = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL_SCHEDULE,
+const axiosInstance3 = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL_PAYMENT,
   headers: {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "*",
@@ -12,7 +12,7 @@ const axiosInstance2 = axios.create({
   },
 });
 
-axiosInstance2.interceptors.request.use(
+axiosInstance3.interceptors.request.use(
   function (req) {
     return req;
   },
@@ -21,7 +21,7 @@ axiosInstance2.interceptors.request.use(
   }
 );
 
-axiosInstance2.interceptors.response.use(
+axiosInstance3.interceptors.response.use(
   (response) => Promise.resolve(response),
   (error) => {
     if (error.response) return Promise.reject(error.response);
@@ -29,4 +29,4 @@ axiosInstance2.interceptors.response.use(
   }
 );
 
-export default axiosInstance2;
+export default axiosInstance3;
